@@ -23,6 +23,27 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class ExcellToSql {
 
+    private static Map<String, String> DICT_MAP = new HashMap<>();
+
+    static {
+        DICT_MAP.put("本人","SELF");
+        DICT_MAP.put("父母","2");
+        DICT_MAP.put("朋友","5");
+        DICT_MAP.put("配偶","1");
+        DICT_MAP.put("其他","8");
+        DICT_MAP.put("子女","2");
+        DICT_MAP.put("同事","4");
+        DICT_MAP.put("工作证明人","7");
+        DICT_MAP.put("无","8");
+        DICT_MAP.put("客户本人","SELF");
+        DICT_MAP.put("朋友、同学、同事","5");
+        DICT_MAP.put("兄弟姐妹","RLTV");
+        DICT_MAP.put("其他亲属","OTHR");
+        DICT_MAP.put("自己","SELF");
+        DICT_MAP.put("未知","8");
+        DICT_MAP.put("","8");
+    }
+
     public static void getSqlByPOI(String filePath, String slqPath) {
         try {
             InputStream in = new FileInputStream(filePath);
@@ -108,14 +129,14 @@ public class ExcellToSql {
     }
 
     private static void apperdSql(StringBuilder sql, List<ExcelBean> excelBean) {
+        Snowflake snowflake = IdUtil.createSnowflake(1, 1);
         for (ExcelBean bean : excelBean) {
             //参数1为终端ID
             //参数2为数据中心ID
-            Snowflake snowflake = IdUtil.createSnowflake(1, 1);
             long id = snowflake.nextId();
-            sql.append(String.format("insert into tbl_ccms_log_act_tel ('tel_log_id','case_id','cust_no','name','rel_with_cust','tel_no','tel_type','crt_time','upd_time','remark','collector','crt_user','upd_user') " +
-                            "values ('%s',(select case_id from tbl_ccms_biz_acct_account where cert_no = '%s'),(select cust_no from tbl_ccms_biz_acct_account where cert_no = '%s'),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');\n",
-                    id, bean.getCertNo(), bean.getCertNo(), bean.getName(), bean.getRelType(), bean.getTelNo(), "MB", bean.getCrtTime(), bean.getCrtTime(), bean.getRemark(), bean.getCollector(), bean.getCollector(), bean.getCollector()));
+            sql.append(String.format("insert into tbl_ccms_log_act_tel (`tel_log_id`,`case_id`,`cust_no`,`name`,`rel_with_cust`,`tel_no`,`tel_type`,`crt_time`,`upd_time`,`remark`,`collector`,`crt_user`,`upd_user`) " +
+                            "values ('%s',(select case_id from tbl_ccms_biz_acct_account where cert_no = '%s' LIMIT 1),(select cust_no from tbl_ccms_biz_acct_account where cert_no = '%s' LIMIT 1),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');\n",
+                    id, bean.getCertNo(), bean.getCertNo(), bean.getName(), DICT_MAP.get(bean.getRelType()), bean.getTelNo(), "MB", bean.getCrtTime(), "2020-12-28", bean.getRemark(), bean.getCollector(), bean.getCollector(), "hengjb"));
         }
     }
 
@@ -131,10 +152,11 @@ public class ExcellToSql {
 
     public static void main(String args[]) {
         String filePath = "D:/test/20200630.xlsx";    //指定本地的数据目录
-        String slqPath = "D:/test/insert01.sql";    //指定生成文件目录
+        String slqPath = "D:/test/insert05.sql";    //指定生成文件目录
         long startTime = System.currentTimeMillis();
         getSqlByHutool(filePath, slqPath);
 //        getSqlByPOI(filePath, slqPath);
+        System.out.println(DICT_MAP.get(""));
         long endTime = System.currentTimeMillis();
         System.out.println("耗时为m:" + (endTime - startTime) / 1000);
     }
